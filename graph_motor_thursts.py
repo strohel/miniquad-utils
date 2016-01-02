@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+from collections import defaultdict
+import csv
+import json
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -55,6 +60,38 @@ motors = {
     },
 }
 
+class MeasurementIndexes:
+    def __init__(self, U, I, thrust):
+        self.U = U
+        self.I = I
+        self.thrust = thrust
+        self.rpm = None
+
+class RowIndexes:
+    def __init__(self):
+        self.battery = 0
+        self.prop = 1
+        self.measurements = [MeasurementIndexes(5, 6, 7), MeasurementIndexes(8, 9, 10)]
+
+def load_motor_info_from_csv(filepath):
+    motors = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    indexof = RowIndexes()
+
+    def read_measurement(row, indexes):
+        return (float(row[indexes.U]), float(row[indexes.I]), float(row[indexes.thrust]))
+
+    with open(filepath, newline='') as csvfile:
+        motor = os.path.splitext(os.path.basename(filepath))[0]
+        reader = csv.reader(csvfile)
+        # skip first 2 rows:
+        next(reader)
+        next(reader)
+        for row in reader:
+            for measurement in indexof.measurements:
+                motors[motor][row[indexof.battery]][row[indexof.prop]].append(read_measurement(row, measurement))
+
+    return motors
+
 class RepeatCycler:
     def __init__(self, base_seq):
         self.base_iter = iter(base_seq)
@@ -72,7 +109,7 @@ class RepeatCycler:
             self.last = next(self.base_iter)
             return self.last
 
-def main():
+def plot_motor_params(motors):
     fig = plt.figure(1)
     ax1 = fig.add_subplot(111)
 
@@ -89,7 +126,6 @@ def main():
                 ax1.plot(x, y, 'o', label=name)
 
                 p = np.poly1d(np.polyfit(x, y, min(2, len(y)-1)))
-                #print("{}:\n{}\n".format(name, p))
                 if len(y) > 2:
                     print("Ratio at 50% max thrust:", p(0.5 * x[-1])/p(x[-1]))
 
@@ -103,6 +139,15 @@ def main():
     ax1.legend(loc='best')
 
     plt.show()
+
+def main():
+    motors2 = load_motor_info_from_csv("../Sunnysky X2204 2300KV.csv")
+
+    #print(json.dumps(motors, sort_keys=True, indent=2))
+    #print(json.dumps(motors2, sort_keys=True, indent=2))
+
+    plot_motor_params(motors)
+    plot_motor_params(motors2)
 
 if __name__ == '__main__':
     main()

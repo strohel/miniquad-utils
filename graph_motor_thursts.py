@@ -9,57 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-motors = {
-    # motor name
-    "Sunnysky X2204 2300KV": {
-        # battery cells
-        "3S": {
-            # prop
-            "6030": [
-                # U [V], I [A], thrust [g]
-                (12.2, 2.2, 120),
-                (12.1, 8.5, 395),
-            ],
-            "6045": [
-                (12, 4, 215),
-                (11.7, 16.1, 560),
-            ],
-        },
-    },
-    "DYS BE1806 2300KV": {
-        "3S": {
-            "6030": [
-                (12.1, 4, 240),
-                (12, 10.2, 485),
-            ],
-            "6045": [
-                (12, 5.1, 235),
-                (11.8, 16.1, 580),
-            ],
-        }
-    },
-    "RCX H2205 2350KV": {
-        "3S": {
-            "6030": [
-                (12.4, 10.8, 549),
-            ],
-            "6045": [
-                (12.4, 18, 724),
-            ],
-        },
-    },
-    "RCX H2205 2633KV": {
-        "3S": {
-            "6030": [
-                (12.5, 13.3, 632),
-            ],
-            "6045": [
-                (12.4, 20.8, 796),
-            ],
-        }
-    },
-}
-
 def col(colindex):
     if colindex is None:
         return '?'
@@ -206,13 +155,11 @@ def plot_motor_params(motors):
     plt.show()
 
 def main():
-    motors2 = load_motor_info_from_csv("../Sunnysky X2204 2300KV.csv")
+    motors = load_motor_info_from_csv("../Sunnysky X2204 2300KV.csv")
 
     #print(json.dumps(motors, sort_keys=True, indent=2))
-    #print(json.dumps(motors2, sort_keys=True, indent=2))
 
     plot_motor_params(motors)
-    plot_motor_params(motors2)
 
 if __name__ == '__main__':
     main()

@@ -60,35 +60,100 @@ motors = {
     },
 }
 
+def col(colindex):
+    if colindex is None:
+        return '?'
+    return chr(ord('A') + colindex)
+
 class MeasurementIndexes:
-    def __init__(self, U, I, thrust):
+    def __init__(self, U=None, I=None, thrust=None, rpm=None):
         self.U = U
         self.I = I
         self.thrust = thrust
-        self.rpm = None
+        self.rpm = rpm
+
+    def __str__(self):
+        return "MeasurementIndexes(U={}, I={}, thrust={}, rpm={})".format(col(self.U), col(self.I),
+                                                                          col(self.thrust), col(self.rpm))
+
+    __repr__ = __str__
+
+    def is_complete(self):
+        return self.U is not None and self.I is not None \
+               and self.thrust is not None and self.rpm is not None
 
 class RowIndexes:
-    def __init__(self):
-        self.battery = 0
-        self.prop = 1
-        self.measurements = [MeasurementIndexes(5, 6, 7), MeasurementIndexes(8, 9, 10)]
+    def __init__(self, battery=None, prop=None, measurements=[]):
+        self.battery = battery
+        self.prop = prop
+        self.measurements = measurements
+
+    def __str__(self):
+        return "RowIndexes(battery={}, prop={}, measurements={})".format(col(self.battery), col(self.prop),
+                                                                         self.measurements)
+
+    def is_complete(self):
+        return self.battery is not None and self.prop is not None and self.measurements
+
+def determine_indexes(reader):
+    def set_measurement_attr(measurement_indexes, attr_name, colnr, cell):
+        if getattr(measurement_indexes, attr_name) is not None:
+            raise ValueError("Reached second {} field (containing '{}') at column {}, but previous "
+                "measurement column group {} is incomplete.".format(attr_name, cell, col(colnr),
+                                                                    measurement_indexes))
+        setattr(measurement_indexes, attr_name, colnr)
+
+    for rownr, row in enumerate(reader, start=1):
+        indexes = RowIndexes()
+        measurement_indexes = MeasurementIndexes()
+        for i, cell in enumerate(row):
+            if cell.lower().startswith("batt"):
+                indexes.battery = i
+            elif cell.lower().startswith("prop"):
+                indexes.prop = i
+
+            elif cell.lower().startswith("u"):
+                set_measurement_attr(measurement_indexes, 'U', i, cell)
+            elif cell.lower().startswith("i"):
+                set_measurement_attr(measurement_indexes, 'I', i, cell)
+            elif cell.lower().startswith("t"):
+                set_measurement_attr(measurement_indexes, 'thrust', i, cell)
+            elif cell.lower().startswith("rpm"):
+                set_measurement_attr(measurement_indexes, 'rpm', i, cell)
+
+            if measurement_indexes.is_complete():
+                indexes.measurements.append(measurement_indexes)
+                measurement_indexes = MeasurementIndexes()
+
+        if indexes.is_complete():
+            print("Debug: found complete indexes {} on row {}.".format(indexes, rownr))
+            return indexes
+        else:
+            print("Debug: indexes {} based on row {} {} not complete, trying next row.".format(
+                  indexes, rownr, row))
+
+    raise ValueError("No complete indexes found.")
 
 def load_motor_info_from_csv(filepath):
     motors = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    indexof = RowIndexes()
 
     def read_measurement(row, indexes):
-        return (float(row[indexes.U]), float(row[indexes.I]), float(row[indexes.thrust]))
+        try:
+            return (float(row[indexes.U]), float(row[indexes.I]), float(row[indexes.thrust]))
+        except ValueError as e:
+            #print("Debug: failed to parse cells {} as measurement: {}".format([row[indexes.U], row[indexes.I], row[indexes.thrust]], e))
+            return None
 
     with open(filepath, newline='') as csvfile:
         motor = os.path.splitext(os.path.basename(filepath))[0]
         reader = csv.reader(csvfile)
-        # skip first 2 rows:
-        next(reader)
-        next(reader)
+        indexof = determine_indexes(reader)
+
         for row in reader:
             for measurement in indexof.measurements:
-                motors[motor][row[indexof.battery]][row[indexof.prop]].append(read_measurement(row, measurement))
+                parsed = read_measurement(row, measurement)
+                if parsed:
+                    motors[motor][row[indexof.battery]][row[indexof.prop]].append(parsed)
 
     return motors
 

@@ -5,6 +5,7 @@ data.cell = 3;
 data.prop = 3;
 data.esc = 7;
 data.session = 3;
+var all_data = Object(); // filled in in add_events()
 
 var measurements = [
     [1, 1, 1, 1, 1],
@@ -14,7 +15,16 @@ var measurements = [
 
 function toggle(type, id) {
     data[type] ^= id;
+    update_states();
+}
 
+function activate_all(type) {
+    data[type] = all_data[type];
+    update_states();
+}
+
+function group_by(type) {
+    data[type] = 0;
     update_states();
 }
 
@@ -27,16 +37,20 @@ var measurement_index = {
 };
 function get_measurement_count(type, id) {
     var index = measurement_index[type];
+
+    // pretend this type-id combination is active
+    var mend_data = $.extend({}, data);
+    mend_data[type] |= id;
+
     function measurement_available(measurement) {
-        return (data.motor & measurement[0])
-            && (data.cell & measurement[1])
-            && (data.prop & measurement[2])
-            && (data.esc & measurement[3])
-            && (data.session & measurement[4])
+        return (mend_data.motor == 0 || mend_data.motor & measurement[0])
+            && (mend_data.cell == 0 || mend_data.cell & measurement[1])
+            && (mend_data.prop == 0 || mend_data.prop & measurement[2])
+            && (mend_data.esc == 0 || mend_data.esc & measurement[3])
+            && (mend_data.session == 0 || mend_data.session & measurement[4])
     }
 
     var count = 0;
-    console.log("get_measurement_count(type="+type+", id="+id+"): index="+index);
     $.each(measurements, function(i, measurement) {
         if (measurement[index] == id && measurement_available(measurement))
             count++;
@@ -51,12 +65,34 @@ function update_states() {
             var id = 1 << i;
             var je = $(element);
 
-            if (data[type] & id)
-                je.addClass('active')
-            else
-                je.removeClass('active')
-            je.children("span").html(get_measurement_count(type, id));
+            var count = get_measurement_count(type, id);
+            if (data[type] & id) {
+                if (count == 0)
+                    je.removeClass('active').addClass('list-group-item-info');
+                else
+                    je.addClass('active').removeClass('list-group-item-info');
+            } else {
+                je.removeClass('active').removeClass('list-group-item-info');
+                // number of woud-be-added items is shown in this case, unless group-by is active
+                if (data[type] != 0)
+                    count = "+ "+count;
+            }
+
+            je.children("span").html(count);
         });
+
+        var jall_btn = $('#'+type+"-all");
+        if (data[type] == all_data[type])
+            jall_btn.addClass('active');
+        else
+            jall_btn.removeClass('active');
+
+        var jgroup_btn = $('#'+type+"-group");
+        if (data[type] == 0)
+            jgroup_btn.addClass('btn-primary');
+        else
+            jgroup_btn.removeClass('btn-primary');
+
     });
 }
 
@@ -65,8 +101,12 @@ function add_events() {
         var elements = $('#' + type + '-list').children("button");
         elements.each(function(i, element) {
             var id = 1 << i;
+            all_data[type] |= id;
             element.onclick = function() { toggle(type, id); };
         });
+
+        $('#'+type+"-all").click(function() { activate_all(type); });
+        $('#'+type+"-group").click(function() { group_by(type); });
     });
 }
 

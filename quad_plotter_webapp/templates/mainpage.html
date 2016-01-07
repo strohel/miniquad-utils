@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mini Quad Motor Thrust Plotter</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-header">
+        <h1>Mini Quad Motor Thrust Plotter</h1>
+      </div>
+
+      <div class="row">
+        <div class="col-sm-3">
+          <h4 class="text-center">Motors</h4>
+          <div class="list-group" id='motor-list'>
+              <button type="button" class="list-group-item">SunnySky <span class="badge">?</span></button>
+              <button type="button" class="list-group-item">RCX <span class="badge">?</span></button>
+              <button type="button" class="list-group-item">Cobra <span class="badge">?</span></button>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <h4 class="text-center">Cells</h4>
+          <div class="list-group" id="cell-list">
+              <button type="button" class="list-group-item">2S <span class="badge">?</span></button>
+              <button type="button" class="list-group-item">3S <span class="badge">?</span></button>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <h4 class="text-center">Prop</h4>
+          <div class="list-group" id="prop-list">
+              <button type="button" class="list-group-item">GF 5030 <span class="badge">?</span></button>
+              <button type="button" class="list-group-item">HQ 6045 <span class="badge">?</span></button>
+          </div>
+        </div>
+
+        <div class="col-md-2">
+          <h4 class="text-center">ESC</h4>
+          <div class="list-group" id="esc-list">
+              <button type="button" class="list-group-item">default <span class="badge">?</span></button>
+              <button type="button" class="list-group-item">active <span class="badge">?</span></button>
+              <button type="button" class="list-group-item">disabled <span class="badge">?</span></button>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <h4 class="text-center">Author, session</h4>
+          <div class="list-group" id="session-list">
+              <button type="button" class="list-group-item">EngineerX <span class="badge">?</span></button>
+              <button type="button" class="list-group-item">Mustang <span class="badge">?</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript (placed at the end of the document so the pages load faster) -->
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+    <script src="mainpage.js"></script>
+  </body>
+</html>

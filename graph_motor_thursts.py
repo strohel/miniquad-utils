@@ -4,6 +4,7 @@ from collections import defaultdict
 import csv
 from glob import iglob
 import json
+import logging
 import os
 
 import numpy as np
@@ -76,11 +77,11 @@ def determine_indexes(reader):
                 measurement_indexes = MeasurementIndexes()
 
         if indexes.is_complete():
-            print("Debug: found complete indexes {} on row {}.".format(indexes, rownr))
+            logging.debug("Found complete indexes {} on row {}.".format(indexes, rownr))
             return indexes
         else:
-            print("Debug: indexes {} based on row {} {} not complete, trying next row.".format(
-                  indexes, rownr, row))
+            logging.debug("Indexes {} based on row {} {} not complete, trying next row.".format(
+                          indexes, rownr, row))
 
     raise ValueError("No complete indexes found.")
 
@@ -89,7 +90,7 @@ def load_motor_info_from_csv(motors, filepath):
         try:
             return (float(row[indexes.U]), float(row[indexes.I]), float(row[indexes.thrust]))
         except ValueError as e:
-            #print("Debug: failed to parse cells {} as measurement: {}".format([row[indexes.U], row[indexes.I], row[indexes.thrust]], e))
+            logging.debug("Failed to parse cells {} as measurement: {}".format([row[indexes.U], row[indexes.I], row[indexes.thrust]], e))
             return None
 
     with open(filepath, newline='') as csvfile:
@@ -113,7 +114,7 @@ def load_motor_info():
         try:
             load_motor_info_from_csv(motors, filepath)
         except ValueError as e:
-            print("Error: problem parsing file {}: {} - ignoring.".format(filepath, e))
+            logging.error("Problem parsing file {}: {} - ignoring.".format(filepath, e))
     return motors
 
 def save_data_for_webapp(motors, filepath):
@@ -175,7 +176,7 @@ def plot_motor_params(motors):
 
                 p = np.poly1d(np.polyfit(x, y, min(2, len(y)-1)))
                 if len(y) > 2:
-                    print("Ratio at 50% max thrust:", p(0.5 * x[-1])/p(x[-1]))
+                    logging.info("Ratio at 50% max thrust:", p(0.5 * x[-1])/p(x[-1]))
 
                 xp = np.linspace(0, np.max(x), 100)
                 ax1.plot(xp, np.maximum(p(xp), 0), '--')
@@ -192,7 +193,7 @@ def main():
     motors = load_motor_info()
     save_data_for_webapp(motors, 'quad_plotter_webapp/templates/data.json')
 
-    #print(json.dumps(motors, sort_keys=True, indent=2))
+    logging.debug(json.dumps(motors, sort_keys=True, indent=2))
 
     plot_motor_params(motors)
 

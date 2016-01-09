@@ -1,0 +1,31 @@
+{
+    "items": {
+        "motor": [
+            "SunnySky",
+            "RCX",
+            "Cobra"
+        ],
+        "cell": [
+            "2S",
+            "3S"
+        ],
+        "prop": [
+            "GF 5030",
+            "HQ 6045"
+        ],
+        "esc": [
+            "BLHeli",
+            "KISS",
+            "Foo bar"
+        ],
+        "session": [
+            "EngineerX",
+            "Mustang"
+        ]
+    },
+    "measurements": [
+        [1, 1, 1, 1, 1],
+        [2, 2, 2, 2, 2],
+        [4, 2, 2, 4, 2]
+    ]
+}

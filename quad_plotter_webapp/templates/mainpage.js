@@ -5,13 +5,10 @@ data.cell = 3;
 data.prop = 3;
 data.esc = 7;
 data.session = 3;
-var all_data = Object(); // filled in in add_events()
 
-var measurements = [
-    [1, 1, 1, 1, 1],
-    [2, 2, 2, 2, 2],
-    [4, 2, 2, 4, 2],
-];
+// filled in in initialize()
+var measurements;
+var all_data;
 
 function toggle(type, id) {
     data[type] ^= id;
@@ -96,19 +93,36 @@ function update_states() {
     });
 }
 
-function add_events() {
+function initialize() {
+    $.getJSON('data.json', initialize_phase_two);
+}
+
+function initialize_phase_two(data) {
+    measurements = data.measurements;
+    var items = data.items;
+
+    console.log(items);
+    all_data = Object();
     $.each(types, function(i, type) {
-        var elements = $('#' + type + '-list').children("button");
-        elements.each(function(i, element) {
+        var button_list = $('#' + type + '-list');
+        $.each(items[type], function(i, name) {
             var id = 1 << i;
-            all_data[type] |= id;
-            element.onclick = function() { toggle(type, id); };
+            all_data[type] |= id
+            var element = $('<button type="button" class="list-group-item">'+name+' <span class="badge">?</span></button>');
+            button_list.append(element);
+            element.click(function() { toggle(type, id); });
         });
 
+        var extra_buttons = $('<div class="btn-group btn-group-justified">'
+            + '  <div class="btn-group"><button id="'+type+'-all" type="button" class="btn btn-default">All</button></div>'
+            + '  <div class="btn-group"><button id="'+type+'-group" type="button" class="btn">Group By</button></div>'
+            + '</div>');
+        button_list.after(extra_buttons);
         $('#'+type+"-all").click(function() { activate_all(type); });
         $('#'+type+"-group").click(function() { group_by(type); });
     });
+
+    update_states();
 }
 
-add_events();
-update_states();
+initialize();

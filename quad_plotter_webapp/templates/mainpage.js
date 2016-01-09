@@ -1,13 +1,8 @@
 var types = ["motor", "cell", "prop", "esc", "session"];
-var data = Object();
-data.motor = 7;
-data.cell = 3;
-data.prop = 3;
-data.esc = 7;
-data.session = 3;
 
 // filled in in initialize()
 var measurements;
+var data;
 var all_data;
 
 function toggle(type, id) {
@@ -97,11 +92,10 @@ function initialize() {
     $.getJSON('data.json', initialize_phase_two);
 }
 
-function initialize_phase_two(data) {
-    measurements = data.measurements;
-    var items = data.items;
+function initialize_phase_two(json) {
+    measurements = json.measurements;
+    var items = json.items;
 
-    console.log(items);
     all_data = Object();
     $.each(types, function(i, type) {
         var button_list = $('#' + type + '-list');
@@ -122,6 +116,9 @@ function initialize_phase_two(data) {
         $('#'+type+"-group").click(function() { group_by(type); });
     });
 
+    data = $.extend({}, all_data);
+    console.log(all_data);
+    console.log(data);
     update_states();
 }
 

@@ -133,7 +133,8 @@ def save_data_for_webapp(motors, filepath):
 
     sorted_items = {key: sorted(values) for key, values in items.items()}
     json_data = {'items': sorted_items, 'measurements': measurements}
-    print(json.dumps(json_data, sort_keys=True, indent=4))
+    with open(filepath, 'w') as outfile:
+        json.dump(json_data, outfile, sort_keys=True, indent=4)
 
 class RepeatCycler:
     def __init__(self, base_seq):
@@ -185,7 +186,7 @@ def plot_motor_params(motors):
 
 def main():
     motors = load_motor_info()
-    save_data_for_webapp(motors, 'dynamic_data.json')
+    save_data_for_webapp(motors, 'quad_plotter_webapp/templates/data.json')
 
     #print(json.dumps(motors, sort_keys=True, indent=2))
 

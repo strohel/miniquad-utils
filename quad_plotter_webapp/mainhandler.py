@@ -5,7 +5,7 @@ class MainPage(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = 'text/plain'
         self.response.write('Hello, World!')
 
-pages = [
+routes = [
     ('/', MainPage),
 ]
-app = webapp2.WSGIApplication(pages, debug=True)
+app = webapp2.WSGIApplication(routes, debug=True)

@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 import csv
+from glob import iglob
 import json
 import os
 
@@ -105,11 +106,14 @@ def load_motor_info_from_csv(motors, filepath):
     return motors
 
 def load_motor_info():
-    files = ["../Sunnysky X2204 2300KV.csv"]
+    files = iglob('../*.csv')
 
     motors = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
     for filepath in files:
-        load_motor_info_from_csv(motors, filepath)
+        try:
+            load_motor_info_from_csv(motors, filepath)
+        except ValueError as e:
+            print("Error: problem parsing file {}: {} - ignoring.".format(filepath, e))
     return motors
 
 def save_data_for_webapp(motors, filepath):

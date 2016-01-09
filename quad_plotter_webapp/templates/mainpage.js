@@ -1,4 +1,4 @@
-var types = ["motor", "cell", "prop", "esc", "session"];
+var types = ["motor", "cell", "prop", "esc", "author"];
 
 // filled in in initialize()
 var measurements;
@@ -25,7 +25,7 @@ var measurement_index = {
     cell: 1,
     prop: 2,
     esc: 3,
-    session: 4
+    author: 4
 };
 function get_measurement_count(type, id) {
     var index = measurement_index[type];
@@ -39,7 +39,7 @@ function get_measurement_count(type, id) {
             && (mend_data.cell == 0 || mend_data.cell & measurement[1])
             && (mend_data.prop == 0 || mend_data.prop & measurement[2])
             && (mend_data.esc == 0 || mend_data.esc & measurement[3])
-            && (mend_data.session == 0 || mend_data.session & measurement[4])
+            && (mend_data.author == 0 || mend_data.author & measurement[4])
     }
 
     var count = 0;

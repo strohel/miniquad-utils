@@ -83,9 +83,7 @@ def determine_indexes(reader):
 
     raise ValueError("No complete indexes found.")
 
-def load_motor_info_from_csv(filepath):
-    motors = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-
+def load_motor_info_from_csv(motors, filepath):
     def read_measurement(row, indexes):
         try:
             return (float(row[indexes.U]), float(row[indexes.I]), float(row[indexes.thrust]))
@@ -105,6 +103,37 @@ def load_motor_info_from_csv(filepath):
                     motors[motor][row[indexof.battery]][row[indexof.prop]].append(parsed)
 
     return motors
+
+def load_motor_info():
+    files = ["../Sunnysky X2204 2300KV.csv"]
+
+    motors = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    for filepath in files:
+        load_motor_info_from_csv(motors, filepath)
+    return motors
+
+def save_data_for_webapp(motors, filepath):
+    items = {
+        'motor': set(),
+        'cell': set(),
+        'prop': set(),
+        'esc': set(['TODO']),
+        'author': set(['TODO'])
+    }
+    measurements = []
+
+    l, m = (0, 0)
+    for i, (motor, batteries) in enumerate(sorted(motors.items())):
+        items['motor'].add(motor)
+        for j, (battery, props) in enumerate(sorted(batteries.items())):
+            items['cell'].add(battery)
+            for k, (prop, values) in enumerate(sorted(props.items())):
+                items['prop'].add(prop)
+                measurements.append((1 << i, 1 << j, 1 << k, 1 << l, 1 << m))
+
+    sorted_items = {key: sorted(values) for key, values in items.items()}
+    json_data = {'items': sorted_items, 'measurements': measurements}
+    print(json.dumps(json_data, sort_keys=True, indent=4))
 
 class RepeatCycler:
     def __init__(self, base_seq):
@@ -155,7 +184,8 @@ def plot_motor_params(motors):
     plt.show()
 
 def main():
-    motors = load_motor_info_from_csv("../Sunnysky X2204 2300KV.csv")
+    motors = load_motor_info()
+    save_data_for_webapp(motors, 'dynamic_data.json')
 
     #print(json.dumps(motors, sort_keys=True, indent=2))
 

@@ -1,4 +1,4 @@
-var types = ["motor", "cell", "prop", "esc", "author"];
+var types = ["motor", "cells", "prop", "esc", "author"];
 
 // filled in in initialize()
 var measurements;
@@ -22,7 +22,7 @@ function group_by(type) {
 
 var measurement_index = {
     motor: 0,
-    cell: 1,
+    cells: 1,
     prop: 2,
     esc: 3,
     author: 4
@@ -36,7 +36,7 @@ function get_measurement_count(type, id) {
 
     function measurement_available(measurement) {
         return (mend_data.motor == 0 || mend_data.motor & measurement[0])
-            && (mend_data.cell == 0 || mend_data.cell & measurement[1])
+            && (mend_data.cells == 0 || mend_data.cells & measurement[1])
             && (mend_data.prop == 0 || mend_data.prop & measurement[2])
             && (mend_data.esc == 0 || mend_data.esc & measurement[3])
             && (mend_data.author == 0 || mend_data.author & measurement[4])

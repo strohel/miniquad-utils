@@ -12,6 +12,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+types = ('motor', 'cells', 'prop', 'esc', 'author', 'session')
+
 def col(colindex):
     if colindex is None:
         return '?'
@@ -79,7 +81,7 @@ class SetupIndexes(Setup):
 
 
 def determine_indexes(reader):
-    csv_to_setup = {key: key for key in ['cells', 'prop', 'esc', 'author', 'session']}
+    csv_to_setup = {key: key for key in types[1:]}
     csv_to_measurement = {'u': 'U', 'i': 'I', 't': 'thrust', 'rpm': 'rpm'}
 
     def match_setup_column(indexes, colnr, cell):
@@ -158,19 +160,13 @@ def load_motor_info():
 def determine_unique_setup_keys(measurement_map):
     unique_keys = Setup(set(), set(), set(), set(), set(), set())
     for setup in measurement_map.keys():
-        unique_keys.motor.add(setup.motor)
-        unique_keys.cells.add(setup.cells)
-        unique_keys.prop.add(setup.prop)
-        unique_keys.esc.add(setup.esc)
-        unique_keys.author.add(setup.author)
-        unique_keys.session.add(setup.session)
+        for type in types:
+            # unique_keys.motor.add(setup.motor) for all types
+            getattr(unique_keys, type).add(getattr(setup, type))
 
-    unique_keys.motor = sorted(unique_keys.motor)
-    unique_keys.cells = sorted(unique_keys.cells)
-    unique_keys.prop = sorted(unique_keys.prop)
-    unique_keys.esc = sorted(unique_keys.esc)
-    unique_keys.author = sorted(unique_keys.author)
-    unique_keys.session = sorted(unique_keys.session)
+    for type in types:
+        # unique_keys.motor = sorted(unique_keys.motor) for all types
+        setattr(unique_keys, type, sorted(getattr(unique_keys, type)))
 
     return unique_keys
 
@@ -179,12 +175,8 @@ def index_measurement_map(unique_setup_keys, measurement_map):
     index_map = {}
     for setup, measurements in measurement_map.items():
         indexed_setup = Setup(
-            1 << unique_setup_keys.motor.index(setup.motor),
-            1 << unique_setup_keys.cells.index(setup.cells),
-            1 << unique_setup_keys.prop.index(setup.prop),
-            1 << unique_setup_keys.esc.index(setup.esc),
-            1 << unique_setup_keys.author.index(setup.author),
-            1 << unique_setup_keys.session.index(setup.session))
+            # 1 << unique_setup_keys.motor.index(setup.motor) for each type
+            **{type: 1 << getattr(unique_setup_keys, type).index(getattr(setup, type)) for type in types})
         index_map[indexed_setup] = measurements
     return index_map
 
@@ -215,8 +207,6 @@ class RepeatCycler:
             return self.last
 
 def plot_motor_params(unique_setup_keys, index_map):
-    types = ("motor", "cells", "prop", "esc", "author")
-
     fig = plt.figure(1)
     ax1 = fig.add_subplot(111)
 

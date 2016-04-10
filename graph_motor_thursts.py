@@ -7,6 +7,7 @@ import json
 import logging
 import math
 import os
+import pprint
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -200,6 +201,10 @@ def save_data_for_webapp(unique_setup_keys, index_map, filepath):
         json.dump(json_data, outfile, sort_keys=True, indent=4)
 
 def filter_group_setups(unique_setup_keys, index_map, setup_filter):
+    print('unique_setup_keys:'); pprint.pprint(unique_setup_keys)
+    print('index_map:'); pprint.pprint(index_map)
+    print('setup_filter:'); pprint.pprint(setup_filter)
+
     def modify_setup_by_filter(setup):
         return Setup(**{type: 0 if getattr(setup_filter, type) == 0 else getattr(setup, type)
                       for type in types})
@@ -240,6 +245,10 @@ def filter_group_setups(unique_setup_keys, index_map, setup_filter):
             value = formats[type].format(len(getattr(filtered_key_sets, type)))
         setattr(grouped_names, type, value)
 
+    print('filtered_key_sets:'); pprint.pprint(filtered_key_sets)
+    print('grouped_names:'); pprint.pprint(grouped_names)
+    print('filtered_map:'); pprint.pprint(filtered_map)
+
     return filtered_map, grouped_names
 
 class RepeatCycler:
@@ -274,6 +283,7 @@ def plot_motor_params(unique_setup_keys, index_map, grouped_names):
 
     title = ['Motor Thrust']
     filtered_unique_keys = determine_unique_setup_keys(index_map)
+    print('filtered_unique_keys:'); pprint.pprint(filtered_unique_keys)
     for type in types:
         if len(getattr(filtered_unique_keys, type)) == 1:
             title.append(name_for_type_and_index(type, getattr(filtered_unique_keys, type)[0]))

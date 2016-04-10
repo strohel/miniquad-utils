@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from collections import defaultdict
+from collections import defaultdict, Hashable
 import csv
 from glob import iglob
 import json
@@ -64,6 +64,16 @@ class Setup:
     def from_row(cls, indexof, motor, row):
         return cls(motor, row[indexof.cells], row[indexof.prop], row[indexof.esc],
                    row[indexof.author], row[indexof.session])
+
+    def __eq__(self, other):
+        return self.motor == other.motor and self.cells == other.cells and self.prop == other.prop \
+           and self.esc == other.esc and self.author == other.author and self.session == other.session
+
+    def __hash__(self):
+        if not isinstance(self.motor, Hashable):
+            raise TypeError("{} is not hashable because {} is not hashable.".format(repr(self), repr(self.motor)))
+        return hash(self.motor) ^ hash(self.cells) ^ hash(self.prop) ^ hash(self.esc) \
+             ^ hash(self.author) ^ hash(self.session)
 
     def __repr__(self, args=None, name='Setup'):
         if not args:
@@ -189,6 +199,49 @@ def save_data_for_webapp(unique_setup_keys, index_map, filepath):
     with open(filepath, 'w') as outfile:
         json.dump(json_data, outfile, sort_keys=True, indent=4)
 
+def filter_group_setups(unique_setup_keys, index_map, setup_filter):
+    def modify_setup_by_filter(setup):
+        return Setup(**{type: 0 if getattr(setup_filter, type) == 0 else getattr(setup, type)
+                      for type in types})
+
+    def match_filter(setup):
+        for type in types:
+            type_filter = getattr(setup_filter, type)
+            if type_filter != 0 and getattr(setup, type) & type_filter == 0:
+                return False
+        return True
+
+    filtered_map = defaultdict(list)
+    filtered_key_sets = Setup(**{type: set() for type in types})
+
+    for setup, measurements in index_map.items():
+        modified_setup = modify_setup_by_filter(setup)
+        if not match_filter(modified_setup):
+            continue
+        for type in types:
+            getattr(filtered_key_sets, type).add(getattr(setup, type))
+        filtered_map[modified_setup] += measurements
+
+    formats = {
+        'motor': "{} motors",
+        'cells': "{} cell counts",
+        'prop': "{} prop types",
+        'esc': "{} ESCs",
+        'author': "{} authors",
+        'session': "{} sessions"
+    }
+    grouped_names = Setup()
+    for type in types:
+        if len(getattr(filtered_key_sets, type)) == 1:
+            exp_index = list(getattr(filtered_key_sets, type))[0]
+            type_index = int(math.log2(exp_index))
+            value = getattr(unique_setup_keys, type)[type_index]
+        else:
+            value = formats[type].format(len(getattr(filtered_key_sets, type)))
+        setattr(grouped_names, type, value)
+
+    return filtered_map, grouped_names
+
 class RepeatCycler:
     def __init__(self, base_seq):
         self.base_iter = iter(base_seq)
@@ -206,29 +259,30 @@ class RepeatCycler:
             self.last = next(self.base_iter)
             return self.last
 
-def plot_motor_params(unique_setup_keys, index_map):
+def plot_motor_params(unique_setup_keys, index_map, grouped_names):
     fig = plt.figure(1)
     ax1 = fig.add_subplot(111)
 
     color_cycle = ax1._get_lines.color_cycle
     ax1.set_color_cycle(RepeatCycler(color_cycle))
 
+    def name_for_type_and_index(type, exp_index):
+        if exp_index == 0:
+            return getattr(grouped_names, type)
+        type_index = int(math.log2(exp_index))
+        return getattr(unique_setup_keys, type)[type_index]
+
     title = ['Motor Thrust']
-    # filter measurements, save to index_map
     filtered_unique_keys = determine_unique_setup_keys(index_map)
     for type in types:
-        if len(getattr(filtered_unique_keys, type)) < 2:
-            title.append(getattr(unique_setup_keys, type)[0])
-
-    import pprint
-    pprint.pprint(filtered_unique_keys)
+        if len(getattr(filtered_unique_keys, type)) == 1:
+            title.append(name_for_type_and_index(type, getattr(filtered_unique_keys, type)[0]))
 
     for setup, measurements in index_map.items():
         label = []
         for type in types:
             if len(getattr(filtered_unique_keys, type)) >= 2:
-                type_index = int(math.log2(getattr(setup, type)))
-                label.append(getattr(unique_setup_keys, type)[type_index])
+                label.append(name_for_type_and_index(type, getattr(setup, type)))
 
         value_matrix = np.array([(0, 0, 0)] + [(m.U, m.I, m.thrust) for m in measurements])
         x = value_matrix[:, 1]
@@ -252,13 +306,18 @@ def plot_motor_params(unique_setup_keys, index_map):
     plt.show()
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     measurement_map = load_motor_info()
+
     unique_setup_keys = determine_unique_setup_keys(measurement_map)
     index_map = index_measurement_map(unique_setup_keys, measurement_map)
     save_data_for_webapp(unique_setup_keys, index_map, 'quad_plotter_webapp/templates/data.json')
-    plot_motor_params(unique_setup_keys, index_map)
+
+    setup_filter = Setup(motor=255, cells=255, prop=255, esc=255, author=255, session=255)
+    filtered_map, grouped_names = filter_group_setups(unique_setup_keys, index_map, setup_filter)
+
+    plot_motor_params(unique_setup_keys, filtered_map, grouped_names)
 
 if __name__ == '__main__':
     main()

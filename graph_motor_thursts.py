@@ -26,6 +26,12 @@ class Measurement:
         self.thrust = thrust
         self.rpm = rpm
 
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        return setattr(self, key, value)
+
     def __repr__(self, args=None, name='Measurement'):
         if not args:
             args = (self.U, self.I, self.thrust, self.rpm)
@@ -65,6 +71,12 @@ class Setup:
         return cls(motor, row[indexof.cells], row[indexof.prop], row[indexof.esc],
                    row[indexof.author], row[indexof.session])
 
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        return setattr(self, key, value)
+
     def __eq__(self, other):
         return self.motor == other.motor and self.cells == other.cells and self.prop == other.prop \
            and self.esc == other.esc and self.author == other.author and self.session == other.session
@@ -97,20 +109,20 @@ def determine_indexes(reader):
     def match_setup_column(indexes, colnr, cell):
         for csv_key, setup_key in csv_to_setup.items():
             if cell.lower().startswith(csv_key):
-                if getattr(indexes, setup_key) is not None:
+                if indexes[setup_key] is not None:
                     raise ValueError("Reached second {} field (containing '{}') at column {}.".
                                         format(csv_key, cell, col(colnr)))
-                setattr(indexes, setup_key, colnr)
+                indexes[setup_key] = colnr
                 return True
 
     def match_measurement_column(measurement_indexes, colnr, cell):
         for csv_key, measurement_key in csv_to_measurement.items():
             if cell.lower().startswith(csv_key):
-                if getattr(measurement_indexes, measurement_key) is not None:
+                if measurement_indexes[measurement_key] is not None:
                     raise ValueError("Reached second {} field (containing '{}') at column {}, but previous "
                         "measurement column group {} is incomplete.".format(csv_key, cell, col(colnr),
                                                                             measurement_indexes))
-                setattr(measurement_indexes, measurement_key, colnr)
+                measurement_indexes[measurement_key] = colnr
                 return True
 
     for rownr, row in enumerate(reader, start=1):
@@ -172,11 +184,11 @@ def determine_unique_setup_keys(measurement_map):
     for setup in measurement_map.keys():
         for type in types:
             # unique_keys.motor.add(setup.motor) for all types
-            getattr(unique_keys, type).add(getattr(setup, type))
+            unique_keys[type].add(setup[type])
 
     for type in types:
         # unique_keys.motor = sorted(unique_keys.motor) for all types
-        setattr(unique_keys, type, sorted(getattr(unique_keys, type)))
+        unique_keys[type] = sorted(unique_keys[type])
 
     return unique_keys
 
@@ -186,7 +198,7 @@ def index_measurement_map(unique_setup_keys, measurement_map):
     for setup, measurements in measurement_map.items():
         indexed_setup = Setup(
             # 1 << unique_setup_keys.motor.index(setup.motor) for each type
-            **{type: 1 << getattr(unique_setup_keys, type).index(getattr(setup, type)) for type in types})
+            **{type: 1 << unique_setup_keys[type].index(setup[type]) for type in types})
         index_map[indexed_setup] = measurements
     return index_map
 
@@ -201,13 +213,13 @@ def save_data_for_webapp(unique_setup_keys, index_map, filepath):
 
 def filter_group_setups(unique_setup_keys, index_map, setup_filter):
     def modify_setup_by_filter(setup):
-        return Setup(**{type: 0 if getattr(setup_filter, type) == 0 else getattr(setup, type)
+        return Setup(**{type: 0 if setup_filter[type] == 0 else setup[type]
                       for type in types})
 
     def match_filter(setup):
         for type in types:
-            type_filter = getattr(setup_filter, type)
-            if type_filter != 0 and getattr(setup, type) & type_filter == 0:
+            type_filter = setup_filter[type]
+            if type_filter != 0 and setup[type] & type_filter == 0:
                 return False
         return True
 
@@ -219,7 +231,7 @@ def filter_group_setups(unique_setup_keys, index_map, setup_filter):
         if not match_filter(modified_setup):
             continue
         for type in types:
-            getattr(filtered_key_sets, type).add(getattr(setup, type))
+            filtered_key_sets[type].add(setup[type])
         filtered_map[modified_setup] += measurements
 
     formats = {
@@ -232,13 +244,13 @@ def filter_group_setups(unique_setup_keys, index_map, setup_filter):
     }
     grouped_names = Setup()
     for type in types:
-        if len(getattr(filtered_key_sets, type)) == 1:
-            exp_index = list(getattr(filtered_key_sets, type))[0]
+        if len(filtered_key_sets[type]) == 1:
+            exp_index = list(filtered_key_sets[type])[0]
             type_index = int(math.log2(exp_index))
-            value = getattr(unique_setup_keys, type)[type_index]
+            value = unique_setup_keys[type][type_index]
         else:
-            value = formats[type].format(len(getattr(filtered_key_sets, type)))
-        setattr(grouped_names, type, value)
+            value = formats[type].format(len(filtered_key_sets[type]))
+        grouped_names[type] = value
 
     return filtered_map, grouped_names
 
@@ -268,21 +280,21 @@ def plot_motor_params(unique_setup_keys, index_map, grouped_names):
 
     def name_for_type_and_index(type, exp_index):
         if exp_index == 0:
-            return getattr(grouped_names, type)
+            return grouped_names[type]
         type_index = int(math.log2(exp_index))
-        return getattr(unique_setup_keys, type)[type_index]
+        return unique_setup_keys[type][type_index]
 
     title = ['Motor Thrust']
     filtered_unique_keys = determine_unique_setup_keys(index_map)
     for type in types:
-        if len(getattr(filtered_unique_keys, type)) == 1:
-            title.append(name_for_type_and_index(type, getattr(filtered_unique_keys, type)[0]))
+        if len(filtered_unique_keys[type]) == 1:
+            title.append(name_for_type_and_index(type, filtered_unique_keys[type][0]))
 
     for setup, measurements in index_map.items():
         label = []
         for type in types:
-            if len(getattr(filtered_unique_keys, type)) >= 2:
-                label.append(name_for_type_and_index(type, getattr(setup, type)))
+            if len(filtered_unique_keys[type]) >= 2:
+                label.append(name_for_type_and_index(type, setup[type]))
 
         value_matrix = np.array([(0, 0, 0)] + [(m.U, m.I, m.thrust) for m in measurements])
         x = value_matrix[:, 1]
